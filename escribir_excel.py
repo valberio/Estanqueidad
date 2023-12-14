@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import json
 import openpyxl
 
 def abrir_planilla(planilla_path):
@@ -34,6 +35,7 @@ def escribir_en_columna(planilla, col_titulo, datos):
 
     if indice_columna is not None:
         for row, value in enumerate(datos, start=9):
+            print(f"Escribi {value}")
             planilla.cell(row=row, column=indice_columna, value=value)
 
 def guardar_planilla(workbook, planilla_path):
@@ -51,11 +53,12 @@ def fila_numero_de_medicion(workbook, numero_medicion):
     """
     Busca en la columna de números de medición un número de medición específico; y devuelve la fila en la que se encuentra. 
     """
-    for col in workbook.iter_cols(min_col=0, max_col=0):
-        for celda in col:
-            if celda.value == numero_medicion:
-                return celda.row
-    print("El numero de medicion no se encuentra en la planilla")
+    for cell in workbook['A']:
+        print(f"{cell.value}")
+        if str(cell.value) == str(numero_medicion):
+            print(f"{cell.value}")
+            return cell.row
+    print("El numero de medición no se encontró")
     return None
 
 def escribir_medicion_especifica(workbook, titulo_columna, numero_medicion, medicion):
@@ -66,7 +69,7 @@ def escribir_medicion_especifica(workbook, titulo_columna, numero_medicion, medi
     columna = encontrar_columna(workbook, titulo_columna)
 
     if fila is not None and columna is not None:
-        workbook.cell(row=fila, col=columna, value=medicion)
+        workbook.cell(row=fila, column=columna, value=medicion)
     else:
         print("Fallo la carga de la medicion.")
     
@@ -79,13 +82,23 @@ def main():
     workbook = abrir_planilla(planilla_path)
     planilla = workbook[nombre_hoja]
 
+    if len(sys.argv) < 2:
+        print("---MODO DE USO---")
+        print("- Modo para escribir la columna de mediciones COMPLETA de un sensor:")
+        print("  python escribir_excel.py columna nombre_sensor [medicion1, medicion2, ...]")
+        print("- Escribir una MEDICION ESPECÍFICA de un sensor:")
+        print("  python escribir_excel.py medicion_particular nombre_sensor numero_medicion medicion")
+        return
+
     if workbook is None:
         print(f"Error abriendo la planilla de Excel")
         return None
+        
     
     if sys.argv[1] == "columna":
         titulo_columna = sys.argv[2]
-        datos = sys.argv[3]
+        datos = json.loads(sys.argv[3])
+        print(datos)
         escribir_en_columna(planilla, titulo_columna, datos)
         guardar_planilla(workbook, planilla_path)
 
@@ -98,7 +111,11 @@ def main():
         guardar_planilla(workbook, planilla_path)
 
     else:
-        print("No se usa asi")
+        print("---MODO DE USO---")
+        print("- Modo para escribir la columna de mediciones COMPLETA de un sensor:")
+        print("  python escribir_excel.py columna nombre_sensor [medicion1, medicion2, ...]")
+        print("- Escribir una MEDICION ESPECÍFICA de un sensor:")
+        print("  python escribir_excel.py medicion_particular nombre_sensor numero_medicion medicion")
 
 if __name__ == "__main__":
     main()
